@@ -29,6 +29,7 @@ pub const Os = struct {
         illumos,
         linux,
         plan9,
+        redox,
         rtems,
         serenity,
 
@@ -160,6 +161,7 @@ pub const Os = struct {
                 .haiku,
                 .illumos,
                 .plan9,
+                .redox,
                 .serenity,
 
                 .ps3,
@@ -388,6 +390,7 @@ pub const Os = struct {
                 .haiku,
                 .illumos,
                 .plan9,
+                .redox,
                 .serenity,
 
                 .ps3,
@@ -900,6 +903,7 @@ pub const Abi = enum {
             .illumos,
             .managarm,
             .plan9,
+            .redox,
             .serenity,
             .dragonfly,
             .driverkit,
@@ -2161,6 +2165,7 @@ pub fn requiresLibC(target: *const Target) bool {
         .dragonfly,
         .openbsd,
         .haiku,
+        .redox,
         .serenity,
         => true,
 
@@ -2310,6 +2315,7 @@ pub const DynamicLinker = struct {
 
             .haiku,
             .illumos,
+            .redox,
             .serenity,
 
             .dragonfly,
@@ -2672,6 +2678,16 @@ pub const DynamicLinker = struct {
                 else
                     "/usr",
             }) else none,
+
+            .redox => switch (cpu.arch) {
+                .x86,
+                => init("/usr/lib/ld.so.1"),
+                .aarch64,
+                .riscv64,
+                .x86_64,
+                => init("/usr/lib/ld64.so.1"),
+                else => none,
+            },
 
             .freebsd => switch (cpu.arch) {
                 .arm,
@@ -3113,6 +3129,7 @@ pub fn cTypeBitSize(target: *const Target, c_type: CType) u16 {
         .illumos,
         .linux,
         .plan9,
+        .redox,
         .rtems,
         .serenity,
 

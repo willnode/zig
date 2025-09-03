@@ -212,6 +212,7 @@ pub fn targetTriple(allocator: Allocator, target: *const std.Target) ![]const u8
         .netbsd => "netbsd",
         .openbsd => "openbsd",
         .illumos => "solaris",
+        .redox => "redox",
         .windows, .uefi => "windows",
         .haiku => "haiku",
         .rtems => "rtems",

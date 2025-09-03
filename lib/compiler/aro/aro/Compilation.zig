@@ -397,6 +397,7 @@ fn generateSystemDefines(comp: *Compilation, w: *Io.Writer) !void {
         .emscripten => try define(w, "__EMSCRIPTEN__"),
         .@"3ds" => try define(w, "__3DS__"),
         .vita => try define(w, "__vita__"),
+        .redox => try define(w, "__redox__"),
         else => {},
     }
 
@@ -405,6 +406,7 @@ fn generateSystemDefines(comp: *Compilation, w: *Io.Writer) !void {
         .freebsd,
         .netbsd,
         .openbsd,
+        .redox,
         .dragonfly,
         .linux,
         .haiku,

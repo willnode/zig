@@ -68,6 +68,8 @@ static const char *get_host_os(void) {
     return "dragonfly";
 #elif defined(__HAIKU__)
     return "haiku";
+#elif defined(__redox__)
+    return "redox";
 #else
     panic("unknown host os, specify with ZIG_HOST_TARGET_OS");
 #endif
