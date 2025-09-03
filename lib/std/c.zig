@@ -1273,7 +1273,7 @@ pub const Flock = switch (native_os) {
         pid: pid_t,
         __pad: [4]c_long,
     },
-    .haiku => extern struct {
+    .haiku, .redox => extern struct {
         type: i16,
         whence: i16,
         start: off_t,
@@ -1295,14 +1295,14 @@ pub const HOST_NAME_MAX = switch (native_os) {
     .macos, .ios, .tvos, .watchos, .visionos => 72,
     .openbsd, .haiku, .dragonfly, .netbsd, .solaris, .illumos, .freebsd => 255,
     // https://github.com/SerenityOS/serenity/blob/c87557e9c1865fa1a6440de34ff6ce6fc858a2b7/Kernel/API/POSIX/sys/limits.h#L22
-    .serenity => 64,
+    .redox, .serenity => 64,
     else => {},
 };
 pub const IOV_MAX = switch (native_os) {
     .linux => linux.IOV_MAX,
     .emscripten => emscripten.IOV_MAX,
     // https://github.com/SerenityOS/serenity/blob/098af0f846a87b651731780ff48420205fd33754/Kernel/API/POSIX/sys/uio.h#L16
-    .openbsd, .haiku, .solaris, .illumos, .wasi, .serenity => 1024,
+    .openbsd, .haiku, .redox, .solaris, .illumos, .wasi, .serenity => 1024,
     .macos, .ios, .tvos, .watchos, .visionos => 16,
     .dragonfly, .netbsd, .freebsd => KERN.IOV_MAX,
     else => {},
@@ -1656,7 +1656,7 @@ pub const NAME_MAX = switch (native_os) {
 pub const PATH_MAX = switch (native_os) {
     .linux => linux.PATH_MAX,
     .emscripten => emscripten.PATH_MAX,
-    .wasi => 4096,
+    .redox, .wasi => 4096,
     .windows => 260,
     .openbsd, .haiku, .dragonfly, .netbsd, .solaris, .illumos, .freebsd, .macos, .ios, .tvos, .watchos, .visionos, .serenity => 1024,
     else => {},

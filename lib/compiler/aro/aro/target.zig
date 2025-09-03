@@ -639,6 +639,7 @@ pub fn toLLVMTriple(target: std.Target, buf: []u8) []const u8 {
         .ps3 => "lv2",
         .netbsd => "netbsd",
         .openbsd => "openbsd",
+        .redox => "redox",
         .solaris => "solaris",
         .illumos => "illumos",
         .windows => "windows",

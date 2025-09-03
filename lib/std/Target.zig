@@ -29,6 +29,7 @@ pub const Os = struct {
         hurd,
         linux,
         plan9,
+        redox,
         rtems,
         serenity,
         zos,
@@ -163,6 +164,7 @@ pub const Os = struct {
 
                 .haiku,
                 .plan9,
+                .redox,
                 .serenity,
 
                 .illumos,
@@ -395,6 +397,7 @@ pub const Os = struct {
 
                 .haiku,
                 .plan9,
+                .redox,
                 .serenity,
 
                 .illumos,
@@ -902,6 +905,7 @@ pub const Abi = enum {
             .hermit,
             .managarm,
             .plan9,
+            .redox,
             .serenity,
             .zos,
             .dragonfly,
@@ -2084,6 +2088,7 @@ pub fn requiresLibC(target: *const Target) bool {
         .dragonfly,
         .openbsd,
         .haiku,
+        .redox,
         .solaris,
         .illumos,
         .serenity,
@@ -2188,6 +2193,7 @@ pub const DynamicLinker = struct {
             .fuchsia,
 
             .haiku,
+            .redox,
             .serenity,
 
             .dragonfly,
@@ -2512,6 +2518,16 @@ pub const DynamicLinker = struct {
                 else
                     "/usr",
             }) else none,
+
+            .redox => switch (cpu.arch) {
+                .x86,
+                => init("/usr/lib/ld.so.1"),
+                .aarch64,
+                .riscv64,
+                .x86_64,
+                => init("/usr/lib/ld64.so.1"),
+                else => none,
+            },
 
             .freebsd => switch (cpu.arch) {
                 .arm,
@@ -2926,6 +2942,7 @@ pub fn cTypeBitSize(target: *const Target, c_type: CType) u16 {
         .hurd,
         .linux,
         .plan9,
+        .redox,
         .rtems,
         .serenity,
         .zos,

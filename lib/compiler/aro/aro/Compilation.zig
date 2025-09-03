@@ -281,6 +281,7 @@ fn generateSystemDefines(comp: *Compilation, w: *Writer) !void {
         .netbsd => try w.writeAll("#define __NetBSD__ 1\n"),
         .openbsd => try w.writeAll("#define __OpenBSD__ 1\n"),
         .dragonfly => try w.writeAll("#define __DragonFly__ 1\n"),
+        .redox => try w.writeAll("#define __redox__ 1\n"),
         .solaris => try w.writeAll(
             \\#define sun 1
             \\#define __sun 1
@@ -299,6 +300,7 @@ fn generateSystemDefines(comp: *Compilation, w: *Writer) !void {
         .freebsd,
         .netbsd,
         .openbsd,
+        .redox,
         .dragonfly,
         .linux,
         => try w.writeAll(
