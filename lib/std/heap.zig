@@ -838,6 +838,8 @@ const page_size_min_default: ?usize = switch (builtin.os.tag) {
     },
     // system/lib/libc/musl/arch/emscripten/bits/limits.h
     .emscripten => 64 << 10,
+    // relibc/src/platform/redox/mod.rs
+    .redox => 4 << 10,
     .linux => switch (builtin.cpu.arch) {
         // Linux/arch/*/Kconfig
         .alpha => 8 << 10,
@@ -996,6 +998,8 @@ const page_size_max_default: ?usize = switch (builtin.os.tag) {
     },
     // system/lib/libc/musl/arch/emscripten/bits/limits.h
     .emscripten => 64 << 10,
+    // relibc/src/platform/redox/mod.rs
+    .redox => 4 << 10,
     .linux => switch (builtin.cpu.arch) {
         // Linux/arch/*/Kconfig
         .alpha => 8 << 10,

@@ -463,7 +463,7 @@ pub fn selfExePath(out_buffer: []u8) SelfExePathError![]u8 {
             // TODO could this slice from 0 to out_len instead?
             return mem.sliceTo(out_buffer, 0);
         },
-        .openbsd, .haiku => {
+        .openbsd, .redox, .haiku => {
             // OpenBSD doesn't support getting the path of a running process, so try to guess it
             if (std.os.argv.len == 0)
                 return error.FileNotFound;
