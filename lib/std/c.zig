@@ -10530,7 +10530,7 @@ pub const sigaltstack = switch (native_os) {
 
 pub extern "c" fn memfd_create(name: [*:0]const u8, flags: c_uint) c_int;
 pub const pipe2 = switch (native_os) {
-    .dragonfly, .emscripten, .netbsd, .freebsd, .solaris, .illumos, .openbsd, .linux, .serenity => private.pipe2,
+    .dragonfly, .emscripten, .netbsd, .freebsd, .solaris, .illumos, .openbsd, .redox, .linux, .serenity => private.pipe2,
     else => {},
 };
 pub const copy_file_range = switch (native_os) {
@@ -10561,8 +10561,13 @@ pub const getdirentries = switch (native_os) {
 
 pub const getdents = switch (native_os) {
     .netbsd => private.__getdents30,
+    .redox => posix_getdents_shim,
     else => private.getdents,
 };
+
+fn posix_getdents_shim(fd: c_int, buf_ptr: [*]u8, nbytes: usize) isize {
+    return private.posix_getdents(fd, buf_ptr, nbytes, 0);
+}
 
 pub const getrusage = switch (native_os) {
     .netbsd => private.__getrusage50,
@@ -11493,6 +11498,7 @@ const private = struct {
     extern "c" fn msync(addr: *align(page_size) const anyopaque, len: usize, flags: c_int) c_int;
     extern "c" fn nanosleep(rqtp: *const timespec, rmtp: ?*timespec) c_int;
     extern "c" fn pipe2(fds: *[2]fd_t, flags: O) c_int;
+    extern "c" fn posix_getdents(fd: c_int, buf_ptr: [*]u8, nbytes: usize, flags: c_int) isize;
     extern "c" fn readdir(dir: *DIR) ?*dirent;
     extern "c" fn realpath(noalias file_name: [*:0]const u8, noalias resolved_name: [*]u8) ?[*:0]u8;
     extern "c" fn sched_yield() c_int;

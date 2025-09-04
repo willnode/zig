@@ -5313,6 +5313,9 @@ pub fn sysctlbynameZ(
     if (native_os == .haiku) {
         @compileError("sysctl not supported on Haiku");
     }
+    if (native_os == .redox) {
+        @compileError("sysctl not supported on Redox");
+    }
 
     switch (errno(system.sysctlbyname(name, oldp, oldlenp, newp, newlen))) {
         .SUCCESS => return,
