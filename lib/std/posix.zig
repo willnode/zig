@@ -205,7 +205,7 @@ pub const ACCMODE = switch (native_os) {
     // In practice SerenityOS is the only system supported by Zig that
     // implements this suggestion.
     // https://github.com/SerenityOS/serenity/blob/4adc51fdf6af7d50679c48b39362e062f5a3b2cb/Kernel/API/POSIX/fcntl.h#L28-L30
-    .serenity => enum(u2) {
+    .redox, .serenity => enum(u2) {
         NONE = 0,
         RDONLY = 1,
         WRONLY = 2,
@@ -4493,7 +4493,7 @@ pub const FStatAtError = FStatError || error{
 /// On WASI, `pathname` should be encoded as valid UTF-8.
 /// On other platforms, `pathname` is an opaque sequence of bytes with no particular encoding.
 /// See also `fstatatZ` and `std.os.fstatat_wasi`.
-pub fn fstatat(dirfd: fd_t, pathname: []const u8, flags: u32) FStatAtError!Stat {
+pub fn fstatat(dirfd: fd_t, pathname: []const u8, flags: i32) FStatAtError!Stat {
     if (native_os == .wasi and !builtin.link_libc) {
         const filestat = try std.os.fstatat_wasi(dirfd, pathname, .{
             .SYMLINK_FOLLOW = (flags & AT.SYMLINK_NOFOLLOW) == 0,
@@ -4509,7 +4509,7 @@ pub fn fstatat(dirfd: fd_t, pathname: []const u8, flags: u32) FStatAtError!Stat 
 
 /// Same as `fstatat` but `pathname` is null-terminated.
 /// See also `fstatat`.
-pub fn fstatatZ(dirfd: fd_t, pathname: [*:0]const u8, flags: u32) FStatAtError!Stat {
+pub fn fstatatZ(dirfd: fd_t, pathname: [*:0]const u8, flags: i32) FStatAtError!Stat {
     if (native_os == .wasi and !builtin.link_libc) {
         const filestat = try std.os.fstatat_wasi(dirfd, mem.sliceTo(pathname, 0), .{
             .SYMLINK_FOLLOW = (flags & AT.SYMLINK_NOFOLLOW) == 0,

@@ -257,7 +257,8 @@ pub fn systemCompiler(target: std.Target) LangOpts.Compiler {
     if (target.os.tag == .uefi) return .msvc;
     // this is before windows to grab WindowsGnu
     if (target.abi.isGnu() or
-        target.os.tag == .linux)
+        target.os.tag == .linux or
+        target.os.tag == .redox)
     {
         return .gcc;
     }
@@ -277,6 +278,7 @@ pub fn hasFloat128(target: std.Target) bool {
         .haiku,
         .linux,
         .openbsd,
+        .redox,
         .solaris,
         => target.cpu.arch.isX86(),
         else => false,

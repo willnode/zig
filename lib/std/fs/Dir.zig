@@ -39,7 +39,7 @@ const IteratorError = error{
 } || posix.UnexpectedError;
 
 pub const Iterator = switch (native_os) {
-    .macos, .ios, .freebsd, .netbsd, .dragonfly, .openbsd, .solaris, .illumos => struct {
+    .macos, .ios, .freebsd, .netbsd, .dragonfly, .openbsd, .redox, .solaris, .illumos => struct {
         dir: Dir,
         seek: i64,
         buf: [1024]u8 align(@alignOf(posix.system.dirent)),
@@ -57,6 +57,7 @@ pub const Iterator = switch (native_os) {
             switch (native_os) {
                 .macos, .ios => return self.nextDarwin(),
                 .freebsd, .netbsd, .dragonfly, .openbsd => return self.nextBsd(),
+                .redox => return self.nextRedox(),
                 .solaris, .illumos => return self.nextSolaris(),
                 else => @compileError("unimplemented"),
             }
@@ -107,6 +108,61 @@ pub const Iterator = switch (native_os) {
                     posix.DT.REG => .file,
                     posix.DT.SOCK => .unix_domain_socket,
                     posix.DT.WHT => .whiteout,
+                    else => .unknown,
+                };
+                return Entry{
+                    .name = name,
+                    .kind = entry_kind,
+                };
+            }
+        }
+
+        fn nextRedox(self: *Self) !?Entry {
+            start_over: while (true) {
+                if (self.index >= self.end_index) {
+                    if (self.first_iter) {
+                        posix.lseek_SET(self.dir.fd, 0) catch unreachable; // EBADF here likely means that the Dir was not opened with iteration permissions
+                        self.first_iter = false;
+                    }
+                    const rc = posix.system.getdents(self.dir.fd, &self.buf, self.buf.len);
+                    switch (posix.errno(rc)) {
+                        .SUCCESS => {},
+                        .BADF => unreachable, // Dir is invalid or was opened without iteration ability
+                        .FAULT => unreachable,
+                        .NOTDIR => unreachable,
+                        .INVAL => unreachable,
+                        else => |err| return posix.unexpectedErrno(err),
+                    }
+                    if (rc == 0) return null;
+                    self.index = 0;
+                    self.end_index = @as(usize, @intCast(rc));
+                }
+                const entry = @as(*align(1) posix.system.dirent, @ptrCast(&self.buf[self.index]));
+                const next_index = self.index + entry.reclen;
+                self.index = next_index;
+
+                const name = mem.sliceTo(@as([*:0]u8, @ptrCast(&entry.name)), 0);
+                if (mem.eql(u8, name, ".") or mem.eql(u8, name, ".."))
+                    continue :start_over;
+
+                const stat_info = posix.fstatat(
+                    self.dir.fd,
+                    name,
+                    posix.AT.FDCWD,
+                ) catch |err| switch (err) {
+                    error.NameTooLong => unreachable,
+                    error.SymLinkLoop => unreachable,
+                    error.FileNotFound => unreachable, // lost the race
+                    else => |e| return e,
+                };
+                const entry_kind: Entry.Kind = switch (stat_info.mode & posix.S.IFMT) {
+                    posix.S.IFIFO => .named_pipe,
+                    posix.S.IFCHR => .character_device,
+                    posix.S.IFDIR => .directory,
+                    posix.S.IFBLK => .block_device,
+                    posix.S.IFREG => .file,
+                    posix.S.IFLNK => .sym_link,
+                    posix.S.IFSOCK => .unix_domain_socket,
                     else => .unknown,
                 };
                 return Entry{
@@ -619,6 +675,7 @@ fn iterateImpl(self: Dir, first_iter_start_value: bool) Iterator {
         .netbsd,
         .dragonfly,
         .openbsd,
+        .redox,
         .solaris,
         .illumos,
         => return Iterator{

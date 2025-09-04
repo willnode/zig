@@ -2198,7 +2198,7 @@ pub fn lstat(pathname: [*:0]const u8, statbuf: *Stat) usize {
     }
 }
 
-pub fn fstatat(dirfd: i32, path: [*:0]const u8, stat_buf: *Stat, flags: u32) usize {
+pub fn fstatat(dirfd: i32, path: [*:0]const u8, stat_buf: *Stat, flags: i32) usize {
     if (native_arch == .riscv32 or native_arch.isLoongArch()) {
         // riscv32 and loongarch have made the interesting decision to not implement some of
         // the older stat syscalls, including this one.
