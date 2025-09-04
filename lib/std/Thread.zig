@@ -777,6 +777,9 @@ const PosixThreadImpl = struct {
             .linux => {
                 return LinuxThreadImpl.getCpuCount();
             },
+            .redox => {
+                return 1; // TODO
+            },
             .openbsd => {
                 var count: c_int = undefined;
                 var count_size: usize = @sizeOf(c_int);
