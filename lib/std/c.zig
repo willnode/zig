@@ -10565,8 +10565,9 @@ pub const getdents = switch (native_os) {
     else => private.getdents,
 };
 
-fn posix_getdents_shim(fd: c_int, buf_ptr: [*]u8, nbytes: usize) isize {
-    return private.posix_getdents(fd, buf_ptr, nbytes, 0);
+fn posix_getdents_shim(_: c_int, _: [*]u8, _: usize) isize {
+    return @intFromEnum(redox.E.NOSYS);
+    // return private.posix_getdents(fd, buf_ptr, nbytes, 0);
 }
 
 pub const getrusage = switch (native_os) {
