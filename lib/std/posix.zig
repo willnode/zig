@@ -373,7 +373,9 @@ pub const FChmodAtError = FChmodError || error{
 /// [1]: https://sourceware.org/legacy-ml/libc-alpha/2020-02/msg00467.html.
 pub inline fn fchmodat(dirfd: fd_t, path: []const u8, mode: mode_t, flags: u32) FChmodAtError!void {
     if (!fs.has_executable_bit) @compileError("fchmodat unsupported by target OS");
-
+    if (native_os == .redox) {
+        return error.Unexpected;
+    }
     // No special handling for linux is needed if we can use the libc fallback
     // or `flags` is empty. Glibc only added the fallback in 2.32.
     const skip_fchmodat_fallback = native_os != .linux or
@@ -1630,6 +1632,8 @@ pub fn openatZ(dir_fd: fd_t, file_path: [*:0]const u8, flags: O, mode: mode_t) O
         @compileError("Windows does not support POSIX; use Windows-specific API or cross-platform std.fs API");
     } else if (native_os == .wasi and !builtin.link_libc) {
         return openat(dir_fd, mem.sliceTo(file_path, 0), flags, mode);
+    } else if (native_os == .redox) {
+        return error.Unexpected;
     }
 
     const openat_sym = if (lfs64_abi) system.openat64 else system.openat;
@@ -2345,6 +2349,8 @@ pub fn unlinkatZ(dirfd: fd_t, file_path_c: [*:0]const u8, flags: u32) UnlinkatEr
         return unlinkatW(dirfd, file_path_w.span(), flags);
     } else if (native_os == .wasi and !builtin.link_libc) {
         return unlinkat(dirfd, mem.sliceTo(file_path_c, 0), flags);
+    } else if (native_os == .redox) {
+        return error.Unexpected;
     }
     switch (errno(system.unlinkat(dirfd, file_path_c, flags))) {
         .SUCCESS => return,
@@ -2552,6 +2558,8 @@ pub fn renameatZ(
         return renameatW(old_dir_fd, old_path_w.span(), new_dir_fd, new_path_w.span(), windows.TRUE);
     } else if (native_os == .wasi and !builtin.link_libc) {
         return renameat(old_dir_fd, mem.sliceTo(old_path, 0), new_dir_fd, mem.sliceTo(new_path, 0));
+    } else if (native_os == .redox) {
+        return error.Unexpected;
     }
 
     switch (errno(system.renameat(old_dir_fd, old_path, new_dir_fd, new_path))) {
@@ -2714,6 +2722,8 @@ pub fn mkdiratZ(dir_fd: fd_t, sub_dir_path: [*:0]const u8, mode: mode_t) MakeDir
         @compileError("use std.Io instead");
     } else if (native_os == .wasi and !builtin.link_libc) {
         @compileError("use std.Io instead");
+    } else if (native_os == .redox) {
+        return error.Unexpected;
     }
     switch (errno(system.mkdirat(dir_fd, sub_dir_path, mode))) {
         .SUCCESS => return,
