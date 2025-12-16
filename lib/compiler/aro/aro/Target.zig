@@ -534,7 +534,8 @@ pub fn systemCompiler(target: *const Target) LangOpts.Compiler {
     if (target.os.tag == .uefi) return .msvc;
     // this is before windows to grab WindowsGnu
     if (target.abi.isGnu() or
-        target.os.tag == .linux)
+        target.os.tag == .linux or
+        target.os.tag == .redox)
     {
         return .gcc;
     }
@@ -553,6 +554,7 @@ pub fn hasFloat128(target: *const Target) bool {
         .dragonfly,
         .haiku,
         .linux,
+        .redox,
         .openbsd,
         .illumos,
         => target.cpu.arch.isX86(),
@@ -1222,6 +1224,7 @@ pub fn toLLVMTriple(target: *const Target, buf: []u8) []const u8 {
         .ps3 => "lv2",
         .ps4 => "ps4",
         .ps5 => "ps5",
+        .redox => "redox",
         .rtems => "rtems",
         .serenity => "serenity",
         .tvos => "tvos",
