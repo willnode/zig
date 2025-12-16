@@ -12902,104 +12902,20 @@ pub fn initializeLLVMTarget(arch: std.Target.Cpu.Arch) void {
             llvm.LLVMInitializeAArch64AsmPrinter();
             llvm.LLVMInitializeAArch64AsmParser();
         },
-        .amdgcn => {
-            llvm.LLVMInitializeAMDGPUTarget();
-            llvm.LLVMInitializeAMDGPUTargetInfo();
-            llvm.LLVMInitializeAMDGPUTargetMC();
-            llvm.LLVMInitializeAMDGPUAsmPrinter();
-            llvm.LLVMInitializeAMDGPUAsmParser();
-        },
-        .thumb, .thumbeb, .arm, .armeb => {
-            llvm.LLVMInitializeARMTarget();
-            llvm.LLVMInitializeARMTargetInfo();
-            llvm.LLVMInitializeARMTargetMC();
-            llvm.LLVMInitializeARMAsmPrinter();
-            llvm.LLVMInitializeARMAsmParser();
-        },
-        .avr => {
-            llvm.LLVMInitializeAVRTarget();
-            llvm.LLVMInitializeAVRTargetInfo();
-            llvm.LLVMInitializeAVRTargetMC();
-            llvm.LLVMInitializeAVRAsmPrinter();
-            llvm.LLVMInitializeAVRAsmParser();
-        },
-        .bpfel, .bpfeb => {
-            llvm.LLVMInitializeBPFTarget();
-            llvm.LLVMInitializeBPFTargetInfo();
-            llvm.LLVMInitializeBPFTargetMC();
-            llvm.LLVMInitializeBPFAsmPrinter();
-            llvm.LLVMInitializeBPFAsmParser();
-        },
-        .hexagon => {
-            llvm.LLVMInitializeHexagonTarget();
-            llvm.LLVMInitializeHexagonTargetInfo();
-            llvm.LLVMInitializeHexagonTargetMC();
-            llvm.LLVMInitializeHexagonAsmPrinter();
-            llvm.LLVMInitializeHexagonAsmParser();
-        },
-        .lanai => {
-            llvm.LLVMInitializeLanaiTarget();
-            llvm.LLVMInitializeLanaiTargetInfo();
-            llvm.LLVMInitializeLanaiTargetMC();
-            llvm.LLVMInitializeLanaiAsmPrinter();
-            llvm.LLVMInitializeLanaiAsmParser();
-        },
-        .mips, .mipsel, .mips64, .mips64el => {
-            llvm.LLVMInitializeMipsTarget();
-            llvm.LLVMInitializeMipsTargetInfo();
-            llvm.LLVMInitializeMipsTargetMC();
-            llvm.LLVMInitializeMipsAsmPrinter();
-            llvm.LLVMInitializeMipsAsmParser();
-        },
-        .msp430 => {
-            llvm.LLVMInitializeMSP430Target();
-            llvm.LLVMInitializeMSP430TargetInfo();
-            llvm.LLVMInitializeMSP430TargetMC();
-            llvm.LLVMInitializeMSP430AsmPrinter();
-            llvm.LLVMInitializeMSP430AsmParser();
-        },
-        .nvptx, .nvptx64 => {
-            llvm.LLVMInitializeNVPTXTarget();
-            llvm.LLVMInitializeNVPTXTargetInfo();
-            llvm.LLVMInitializeNVPTXTargetMC();
-            llvm.LLVMInitializeNVPTXAsmPrinter();
-            // There is no LLVMInitializeNVPTXAsmParser function available.
-        },
-        .powerpc, .powerpcle, .powerpc64, .powerpc64le => {
-            llvm.LLVMInitializePowerPCTarget();
-            llvm.LLVMInitializePowerPCTargetInfo();
-            llvm.LLVMInitializePowerPCTargetMC();
-            llvm.LLVMInitializePowerPCAsmPrinter();
-            llvm.LLVMInitializePowerPCAsmParser();
-        },
-        .riscv32, .riscv32be, .riscv64, .riscv64be => {
-            llvm.LLVMInitializeRISCVTarget();
-            llvm.LLVMInitializeRISCVTargetInfo();
-            llvm.LLVMInitializeRISCVTargetMC();
-            llvm.LLVMInitializeRISCVAsmPrinter();
-            llvm.LLVMInitializeRISCVAsmParser();
-        },
-        .sparc, .sparc64 => {
-            llvm.LLVMInitializeSparcTarget();
-            llvm.LLVMInitializeSparcTargetInfo();
-            llvm.LLVMInitializeSparcTargetMC();
-            llvm.LLVMInitializeSparcAsmPrinter();
-            llvm.LLVMInitializeSparcAsmParser();
-        },
-        .s390x => {
-            llvm.LLVMInitializeSystemZTarget();
-            llvm.LLVMInitializeSystemZTargetInfo();
-            llvm.LLVMInitializeSystemZTargetMC();
-            llvm.LLVMInitializeSystemZAsmPrinter();
-            llvm.LLVMInitializeSystemZAsmParser();
-        },
-        .wasm32, .wasm64 => {
-            llvm.LLVMInitializeWebAssemblyTarget();
-            llvm.LLVMInitializeWebAssemblyTargetInfo();
-            llvm.LLVMInitializeWebAssemblyTargetMC();
-            llvm.LLVMInitializeWebAssemblyAsmPrinter();
-            llvm.LLVMInitializeWebAssemblyAsmParser();
-        },
+        .amdgcn => {},
+        .thumb, .thumbeb, .arm, .armeb => {},
+        .avr => {},
+        .bpfel, .bpfeb => {},
+        .hexagon => {},
+        .lanai => {},
+        .mips, .mipsel, .mips64, .mips64el => {},
+        .msp430 => {},
+        .nvptx, .nvptx64 => {},
+        .powerpc, .powerpcle, .powerpc64, .powerpc64le => {},
+        .riscv32, .riscv32be, .riscv64, .riscv64be => {},
+        .sparc, .sparc64 => {},
+        .s390x => {},
+        .wasm32, .wasm64 => {},
         .x86, .x86_64 => {
             llvm.LLVMInitializeX86Target();
             llvm.LLVMInitializeX86TargetInfo();
@@ -13007,71 +12923,16 @@ pub fn initializeLLVMTarget(arch: std.Target.Cpu.Arch) void {
             llvm.LLVMInitializeX86AsmPrinter();
             llvm.LLVMInitializeX86AsmParser();
         },
-        .xtensa => {
-            if (build_options.llvm_has_xtensa) {
-                llvm.LLVMInitializeXtensaTarget();
-                llvm.LLVMInitializeXtensaTargetInfo();
-                llvm.LLVMInitializeXtensaTargetMC();
-                // There is no LLVMInitializeXtensaAsmPrinter function.
-                llvm.LLVMInitializeXtensaAsmParser();
-            }
-        },
-        .xcore => {
-            llvm.LLVMInitializeXCoreTarget();
-            llvm.LLVMInitializeXCoreTargetInfo();
-            llvm.LLVMInitializeXCoreTargetMC();
-            llvm.LLVMInitializeXCoreAsmPrinter();
-            // There is no LLVMInitializeXCoreAsmParser function.
-        },
-        .m68k => {
-            if (build_options.llvm_has_m68k) {
-                llvm.LLVMInitializeM68kTarget();
-                llvm.LLVMInitializeM68kTargetInfo();
-                llvm.LLVMInitializeM68kTargetMC();
-                llvm.LLVMInitializeM68kAsmPrinter();
-                llvm.LLVMInitializeM68kAsmParser();
-            }
-        },
-        .csky => {
-            if (build_options.llvm_has_csky) {
-                llvm.LLVMInitializeCSKYTarget();
-                llvm.LLVMInitializeCSKYTargetInfo();
-                llvm.LLVMInitializeCSKYTargetMC();
-                // There is no LLVMInitializeCSKYAsmPrinter function.
-                llvm.LLVMInitializeCSKYAsmParser();
-            }
-        },
-        .ve => {
-            llvm.LLVMInitializeVETarget();
-            llvm.LLVMInitializeVETargetInfo();
-            llvm.LLVMInitializeVETargetMC();
-            llvm.LLVMInitializeVEAsmPrinter();
-            llvm.LLVMInitializeVEAsmParser();
-        },
-        .arc => {
-            if (build_options.llvm_has_arc) {
-                llvm.LLVMInitializeARCTarget();
-                llvm.LLVMInitializeARCTargetInfo();
-                llvm.LLVMInitializeARCTargetMC();
-                llvm.LLVMInitializeARCAsmPrinter();
-                // There is no LLVMInitializeARCAsmParser function.
-            }
-        },
-        .loongarch32, .loongarch64 => {
-            llvm.LLVMInitializeLoongArchTarget();
-            llvm.LLVMInitializeLoongArchTargetInfo();
-            llvm.LLVMInitializeLoongArchTargetMC();
-            llvm.LLVMInitializeLoongArchAsmPrinter();
-            llvm.LLVMInitializeLoongArchAsmParser();
-        },
+        .xtensa => {},
+        .xcore => {},
+        .m68k => {},
+        .csky => {},
+        .ve => {},
+        .arc => {},
+        .loongarch32, .loongarch64 => {},
         .spirv32,
         .spirv64,
-        => {
-            llvm.LLVMInitializeSPIRVTarget();
-            llvm.LLVMInitializeSPIRVTargetInfo();
-            llvm.LLVMInitializeSPIRVTargetMC();
-            llvm.LLVMInitializeSPIRVAsmPrinter();
-        },
+        => {},
 
         // LLVM does does not have a backend for these.
         .alpha,
