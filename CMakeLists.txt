@@ -742,6 +742,8 @@ elseif(ZIG_HOST_TARGET_OS STREQUAL "serenityos")
   set(ZIG_HOST_TARGET_OS "serenity")
 elseif(ZIG_HOST_TARGET_OS STREQUAL "sunos")
   set(ZIG_HOST_TARGET_OS "illumos")
+elseif(ZIG_HOST_TARGET_OS STREQUAL "unixpaths")
+  set(ZIG_HOST_TARGET_OS "redox")
 endif()
 
 string(TOLOWER "${CMAKE_HOST_SYSTEM_PROCESSOR}" ZIG_HOST_TARGET_ARCH)
