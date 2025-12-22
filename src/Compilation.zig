@@ -29,6 +29,7 @@ const glibc = @import("libs/glibc.zig");
 const musl = @import("libs/musl.zig");
 const freebsd = @import("libs/freebsd.zig");
 const netbsd = @import("libs/netbsd.zig");
+const redox = @import("libs/redox.zig");
 const mingw = @import("libs/mingw.zig");
 const libunwind = @import("libs/libunwind.zig");
 const libcxx = @import("libs/libcxx.zig");
@@ -236,6 +237,7 @@ fuzzer_lib: ?CrtFile = null,
 glibc_so_files: ?glibc.BuiltSharedObjects = null,
 freebsd_so_files: ?freebsd.BuiltSharedObjects = null,
 netbsd_so_files: ?netbsd.BuiltSharedObjects = null,
+redox_so_files: ?redox.BuiltSharedObjects = null,
 
 /// For example `Scrt1.o` and `libc_nonshared.a`. These are populated after building libc from source,
 /// The set of needed CRT (C runtime) files differs depending on the target and compilation settings.
@@ -306,6 +308,7 @@ const QueuedJobs = struct {
     glibc_crt_file: [@typeInfo(glibc.CrtFile).@"enum".fields.len]bool = @splat(false),
     freebsd_crt_file: [@typeInfo(freebsd.CrtFile).@"enum".fields.len]bool = @splat(false),
     netbsd_crt_file: [@typeInfo(netbsd.CrtFile).@"enum".fields.len]bool = @splat(false),
+    redox_crt_file: [@typeInfo(redox.CrtFile).@"enum".fields.len]bool = @splat(false),
     /// one of WASI libc static objects
     wasi_libc_crt_file: [@typeInfo(wasi_libc.CrtFile).@"enum".fields.len]bool = @splat(false),
     /// one of the mingw-w64 static objects
@@ -314,6 +317,7 @@ const QueuedJobs = struct {
     glibc_shared_objects: bool = false,
     freebsd_shared_objects: bool = false,
     netbsd_shared_objects: bool = false,
+    redox_shared_objects: bool = false,
     /// libunwind.a, usually needed when linking libc
     libunwind: bool = false,
     libcxx: bool = false,
@@ -1391,6 +1395,8 @@ pub const MiscTask = enum {
     freebsd_shared_objects,
     netbsd_crt_file,
     netbsd_shared_objects,
+    redox_crt_file,
+    redox_shared_objects,
     mingw_crt_file,
     windows_import_lib,
     libunwind,
@@ -1425,6 +1431,9 @@ pub const MiscTask = enum {
 
     @"netbsd libc Scrt0.o",
     @"netbsd libc shared object",
+
+    @"redox libc Scrt0.o",
+    @"redox libc shared object",
 
     @"mingw-w64 crt2.o",
     @"mingw-w64 dllcrt2.o",
@@ -2592,6 +2601,14 @@ pub fn create(gpa: Allocator, arena: Allocator, io: Io, diag: *CreateDiagnostic,
                     }
 
                     comp.queued_jobs.netbsd_shared_objects = true;
+                } else if (target.isRedoxLibC()) {
+                    if (!std.zig.target.canBuildLibC(target)) return diag.fail(.cross_libc_unavailable);
+
+                    if (redox.needsCrt0(comp.config.output_mode)) |f| {
+                        comp.queued_jobs.redox_crt_file[@intFromEnum(f)] = true;
+                    }
+
+                    comp.queued_jobs.redox_shared_objects = true;
                 } else if (target.isWasiLibC()) {
                     if (!std.zig.target.canBuildLibC(target)) return diag.fail(.cross_libc_unavailable);
 
@@ -2732,6 +2749,11 @@ pub fn destroy(comp: *Compilation) void {
     if (comp.netbsd_so_files) |*netbsd_file| {
         netbsd_file.deinit(gpa);
     }
+
+    if (comp.redox_so_files) |*redox_file| {
+        redox_file.deinit(gpa);
+    }
+
 
     for (comp.c_object_table.keys()) |key| {
         key.destroy(gpa);
@@ -4718,6 +4740,11 @@ fn performAllTheWork(
         comp.link_task_wait_group.spawnManager(buildNetBSDSharedObjects, .{ comp, main_progress_node });
     }
 
+    if (comp.queued_jobs.redox_shared_objects) {
+        comp.link_task_queue.startPrelinkItem();
+        comp.link_task_wait_group.spawnManager(buildRedoxSharedObjects, .{ comp, main_progress_node });
+    }
+
     if (comp.queued_jobs.libunwind) {
         comp.link_task_queue.startPrelinkItem();
         comp.link_task_wait_group.spawnManager(buildLibUnwind, .{ comp, main_progress_node });
@@ -4772,6 +4799,14 @@ fn performAllTheWork(
             const tag: netbsd.CrtFile = @enumFromInt(i);
             comp.link_task_queue.startPrelinkItem();
             comp.link_task_wait_group.spawnManager(buildNetBSDCrtFile, .{ comp, tag, main_progress_node });
+        }
+    }
+
+    for (0..@typeInfo(redox.CrtFile).@"enum".fields.len) |i| {
+        if (comp.queued_jobs.redox_crt_file[i]) {
+            const tag: redox.CrtFile = @enumFromInt(i);
+            comp.link_task_queue.startPrelinkItem();
+            comp.link_task_wait_group.spawnManager(buildRedoxCrtFile, .{ comp, tag, main_progress_node });
         }
     }
 
@@ -5985,6 +6020,31 @@ fn buildNetBSDSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) vo
     }
 }
 
+fn buildNetRedoxFile(comp: *Compilation, crt_file: redox.CrtFile, prog_node: std.Progress.Node) void {
+    defer comp.link_task_queue.finishPrelinkItem(comp);
+    if (redox.buildCrtFile(comp, crt_file, prog_node)) |_| {
+        comp.queued_jobs.redox_crt_file[@intFromEnum(crt_file)] = false;
+    } else |err| switch (err) {
+        error.AlreadyReported => return,
+        else => comp.lockAndSetMiscFailure(.redox_crt_file, "unable to build Redox {s}: {s}", .{
+            @tagName(crt_file), @errorName(err),
+        }),
+    }
+}
+
+fn buildRedoxSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) void {
+    defer comp.link_task_queue.finishPrelinkItem(comp);
+    if (redox.buildSharedObjects(comp, prog_node)) |_| {
+        // The job should no longer be queued up since it succeeded.
+        comp.queued_jobs.redox_shared_objects = false;
+    } else |err| switch (err) {
+        error.AlreadyReported => return,
+        else => comp.lockAndSetMiscFailure(.redox_shared_objects, "unable to build Redox libc shared objects: {s}", .{
+            @errorName(err),
+        }),
+    }
+}
+
 fn buildMingwCrtFile(comp: *Compilation, crt_file: mingw.CrtFile, prog_node: std.Progress.Node) void {
     defer comp.link_task_queue.finishPrelinkItem(comp);
     if (mingw.buildCrtFile(comp, crt_file, prog_node)) |_| {
@@ -6881,6 +6941,14 @@ fn addCommonCCArgs(
                     try argv.append(try std.fmt.allocPrint(arena, "-D__NetBSD_Version__={d}", .{
                         // We don't currently respect the patch component. This wouldn't be particularly helpful because
                         // our abilists file only tracks major and minor NetBSD releases, so the link-time stub symbols
+                        // would be inconsistent with header declarations.
+                        (min_ver.major * 100_000_000) + (min_ver.minor * 1_000_000),
+                    }));
+                } else if (target.isRedoxLibC()) {
+                    const min_ver = target.os.version_range.semver.min;
+                    try argv.append(try std.fmt.allocPrint(arena, "-D__Redox_Version__={d}", .{
+                        // We don't currently respect the patch component. This wouldn't be particularly helpful because
+                        // our abilists file only tracks major and minor Redox releases, so the link-time stub symbols
                         // would be inconsistent with header declarations.
                         (min_ver.major * 100_000_000) + (min_ver.minor * 1_000_000),
                     }));

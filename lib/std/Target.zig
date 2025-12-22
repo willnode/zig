@@ -2146,6 +2146,13 @@ pub inline fn isNetBSDLibC(target: *const Target) bool {
     };
 }
 
+pub inline fn isRedoxLibC(target: *const Target) bool {
+    return switch (target.abi) {
+        .none => target.os.tag == .redox,
+        else => false,
+    };
+}
+
 pub inline fn isWasiLibC(target: *const Target) bool {
     return target.os.tag == .wasi and target.abi.isMusl();
 }
