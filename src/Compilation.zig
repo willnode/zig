@@ -1432,7 +1432,7 @@ pub const MiscTask = enum {
     @"netbsd libc Scrt0.o",
     @"netbsd libc shared object",
 
-    @"redox libc Scrt0.o",
+    @"redox libc crt0.o",
     @"redox libc shared object",
 
     @"mingw-w64 crt2.o",
@@ -6020,7 +6020,7 @@ fn buildNetBSDSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) vo
     }
 }
 
-fn buildNetRedoxFile(comp: *Compilation, crt_file: redox.CrtFile, prog_node: std.Progress.Node) void {
+fn buildRedoxCrtFile(comp: *Compilation, crt_file: redox.CrtFile, prog_node: std.Progress.Node) void {
     defer comp.link_task_queue.finishPrelinkItem(comp);
     if (redox.buildCrtFile(comp, crt_file, prog_node)) |_| {
         comp.queued_jobs.redox_crt_file[@intFromEnum(crt_file)] = false;

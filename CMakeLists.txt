@@ -950,6 +950,10 @@ if(ZIG_NO_LIB)
   list(APPEND ZIG_BUILD_ARGS -Dno-lib)
 endif()
 
+if(ZIG_NO_TEST)
+  list(APPEND ZIG_BUILD_ARGS -Dno-test)
+endif()
+
 if(ZIG_SINGLE_THREADED)
   list(APPEND ZIG_BUILD_ARGS -Dsingle-threaded)
 endif()

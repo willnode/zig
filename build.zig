@@ -28,6 +28,7 @@ pub fn build(b: *std.Build) !void {
 
     const test_step = b.step("test", "Run all the tests");
     const skip_install_lib_files = b.option(bool, "no-lib", "skip copying of lib/ files and langref to installation prefix. Useful for development") orelse false;
+    const skip_all_test = b.option(bool, "no-test", "skip all test") orelse false;
     const skip_install_langref = b.option(bool, "no-langref", "skip copying of langref to the installation prefix") orelse skip_install_lib_files;
     const std_docs = b.option(bool, "std-docs", "include standard library autodocs") orelse false;
     const no_bin = b.option(bool, "no-bin", "skip emitting compiler binary") orelse false;
@@ -377,6 +378,9 @@ pub fn build(b: *std.Build) !void {
     const test_filters = b.option([]const []const u8, "test-filter", "Skip tests that do not match any filter") orelse &[0][]const u8{};
     const test_target_filters = b.option([]const []const u8, "test-target-filter", "Skip tests whose target triple do not match any filter") orelse &[0][]const u8{};
     const test_extra_targets = b.option(bool, "test-extra-targets", "Enable running module tests for additional targets") orelse false;
+
+    if (skip_all_test)
+        return;
 
     var chosen_opt_modes_buf: [4]builtin.OptimizeMode = undefined;
     var chosen_mode_index: usize = 0;

@@ -67,7 +67,7 @@ pub fn buildCrtFile(comp: *Compilation, crt_file: CrtFile, prog_node: std.Progre
                 else => return error.UnsupportedRedoxArch,
             };
 
-            const files = [_]Compilation.CSourceFile{
+            var files = [_]Compilation.CSourceFile{
                 .{
                     .src_path = try csuPath(comp, arena, try path.join(arena, &.{ arch_name, "crt0.S" })),
                     .cache_exempt_flags = acflags.items,
@@ -147,6 +147,17 @@ pub fn loadMetaData(gpa: Allocator, contents: []const u8) !*ABI {
     return abi;
 }
 
+pub const BuiltSharedObjects = struct {
+    lock: Cache.Lock,
+    dir_path: Path,
+
+    pub fn deinit(self: *BuiltSharedObjects, gpa: Allocator) void {
+        self.lock.release();
+        gpa.free(self.dir_path.sub_path);
+        self.* = undefined;
+    }
+};
+
 pub fn buildSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) anyerror!void {
     const tracy = trace(@src());
     defer tracy.end();
@@ -218,9 +229,7 @@ pub fn buildSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) anye
         }
     } else {
         unreachable;
-    }
-
-    const target_ver_index = metadata.all_versions.len - 1;
+    };
 
     var stubs_asm = std.array_list.Managed(u8).init(gpa);
     defer stubs_asm.deinit();
@@ -245,7 +254,7 @@ pub fn buildSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) anye
             };
 
             const targets_mask = try inc_reader.takeLeb128(u64);
-            var lib_info_byte = try inc_reader.takeByte();
+            const lib_info_byte = try inc_reader.takeByte();
             const is_terminal = (lib_info_byte & (1 << 7)) != 0;
             const current_lib_idx = @as(u5, @truncate(lib_info_byte));
 
@@ -285,7 +294,7 @@ pub fn buildSharedObjects(comp: *Compilation, prog_node: std.Progress.Node) anye
 
             const targets_mask = try inc_reader.takeLeb128(u64);
             const size = try inc_reader.takeLeb128(u16);
-            var lib_info_byte = try inc_reader.takeByte();
+            const lib_info_byte = try inc_reader.takeByte();
             const is_terminal = (lib_info_byte & (1 << 7)) != 0;
             const current_lib_idx = @as(u5, @truncate(lib_info_byte));
 
@@ -348,6 +357,111 @@ fn queueSharedObjects(comp: *Compilation, so_files: BuiltSharedObjects) void {
     comp.queuePrelinkTasks(&task_buffer);
 }
 
+const all_map_basename = "all.map";
+
 fn wordDirective(target: *const std.Target) []const u8 {
     return if (target.ptrBitWidth() == 64) ".quad" else ".long";
+}
+
+fn buildSharedLib(
+    comp: *Compilation,
+    arena: Allocator,
+    bin_directory: Cache.Directory,
+    asm_file_basename: []const u8,
+    lib: Lib,
+    prog_node: std.Progress.Node,
+) !void {
+    const tracy = trace(@src());
+    defer tracy.end();
+
+    const io = comp.io;
+    const basename = try std.fmt.allocPrint(arena, "lib{s}.so.{d}", .{ lib.name, lib.sover });
+    const version: Version = .{ .major = lib.sover, .minor = 0, .patch = 0 };
+    const ld_basename = path.basename(comp.getTarget().standardDynamicLinkerPath().get().?);
+    const soname = if (mem.eql(u8, lib.name, "ld")) ld_basename else basename;
+    const map_file_path = try path.join(arena, &.{ bin_directory.path.?, all_map_basename });
+
+    const optimize_mode = comp.compilerRtOptMode();
+    const strip = comp.compilerRtStrip();
+    const config = try Compilation.Config.resolve(.{
+        .output_mode = .Lib,
+        .link_mode = .dynamic,
+        .resolved_target = comp.root_mod.resolved_target,
+        .is_test = false,
+        .have_zcu = false,
+        .emit_bin = true,
+        .root_optimize_mode = optimize_mode,
+        .root_strip = strip,
+        .link_libc = false,
+    });
+
+    const root_mod = try Module.create(arena, .{
+        .paths = .{
+            .root = .zig_lib_root,
+            .root_src_path = "",
+        },
+        .fully_qualified_name = "root",
+        .inherited = .{
+            .resolved_target = comp.root_mod.resolved_target,
+            .strip = strip,
+            .stack_check = false,
+            .stack_protector = 0,
+            .sanitize_c = .off,
+            .sanitize_thread = false,
+            .red_zone = comp.root_mod.red_zone,
+            .omit_frame_pointer = comp.root_mod.omit_frame_pointer,
+            .valgrind = false,
+            .optimize_mode = optimize_mode,
+            .structured_cfg = comp.root_mod.structured_cfg,
+        },
+        .global = config,
+        .cc_argv = &.{},
+        .parent = null,
+    });
+
+    const c_source_files = [1]Compilation.CSourceFile{
+        .{
+            .src_path = try path.join(arena, &.{ bin_directory.path.?, asm_file_basename }),
+            .owner = root_mod,
+        },
+    };
+
+    const misc_task: Compilation.MiscTask = .@"redox libc shared object";
+
+    var sub_create_diag: Compilation.CreateDiagnostic = undefined;
+    const sub_compilation = Compilation.create(comp.gpa, arena, io, &sub_create_diag, .{
+        .dirs = comp.dirs.withoutLocalCache(),
+        .thread_pool = comp.thread_pool,
+        .self_exe_path = comp.self_exe_path,
+        // Because we manually cache the whole set of objects, we don't cache the individual objects
+        // within it. In fact, we *can't* do that, because we need `emit_bin` to specify the path.
+        .cache_mode = .none,
+        .config = config,
+        .root_mod = root_mod,
+        .root_name = lib.name,
+        .libc_installation = comp.libc_installation,
+        .emit_bin = .{ .yes_path = try bin_directory.join(arena, &.{basename}) },
+        .verbose_cc = comp.verbose_cc,
+        .verbose_link = comp.verbose_link,
+        .verbose_air = comp.verbose_air,
+        .verbose_llvm_ir = comp.verbose_llvm_ir,
+        .verbose_llvm_bc = comp.verbose_llvm_bc,
+        .verbose_cimport = comp.verbose_cimport,
+        .verbose_llvm_cpu_features = comp.verbose_llvm_cpu_features,
+        .clang_passthrough_mode = comp.clang_passthrough_mode,
+        .version = version,
+        .version_script = map_file_path,
+        .soname = soname,
+        .c_source_files = &c_source_files,
+        .skip_linker_dependencies = true,
+    }) catch |err| switch (err) {
+        error.CreateFail => {
+            comp.lockAndSetMiscFailure(misc_task, "sub-compilation of {t} failed: {f}", .{ misc_task, sub_create_diag });
+            return error.AlreadyReported;
+        },
+        else => |e| return e,
+    };
+    defer sub_compilation.destroy();
+
+    try comp.updateSubCompilation(sub_compilation, misc_task, prog_node);
 }
